@@ -11,13 +11,90 @@
     <meta property="og:title" content="QLink4u.com - Dịch vụ rút gọn link chuyên nghiệp" />
     <meta property="og:description" content="Tạo link rút gọn với tính năng che link, thống kê chi tiết, bảo mật nâng cao. Hỗ trợ cả cá nhân và doanh nghiệp." />
     <meta property="og:type" content="website" />
+    
+    <style>
+      /* Loading fallback */
+      .loading-fallback {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        font-family: Arial, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        flex-direction: column;
+      }
+      .spinner {
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-top: 3px solid white;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin-bottom: 1rem;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
+    
+    <script type="module" src="/src/main.tsx"></script>
   </head>
 
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <div id="root">
+      <!-- Fallback content while React loads -->
+      <div class="loading-fallback">
+        <div class="spinner"></div>
+        <h2>🚀 QLink4u.com</h2>
+        <p>Đang tải ứng dụng...</p>
+        <p style="font-size: 0.8em; opacity: 0.8;">Nếu trang không tải sau 10 giây, hãy refresh lại</p>
+      </div>
+    </div>
+    
     <script>
-      // Register Service Worker for dynamic routing
+      // Debug logging
+      console.log('QLink4u.com - Starting application...');
+      console.log('Environment:', {
+        userAgent: navigator.userAgent,
+        url: window.location.href,
+        timestamp: new Date().toISOString()
+      });
+      
+      // Error handling
+      window.addEventListener('error', function(e) {
+        console.error('Global error:', e.error);
+        document.getElementById('root').innerHTML = `
+          <div class="loading-fallback">
+            <h2>❌ Lỗi tải ứng dụng</h2>
+            <p>Chi tiết lỗi: ${e.message}</p>
+            <button onclick="window.location.reload()" style="padding: 10px 20px; margin-top: 1rem; background: white; color: #333; border: none; border-radius: 5px; cursor: pointer;">
+              🔄 Tải lại trang
+            </button>
+          </div>
+        `;
+      });
+      
+      // Timeout fallback
+      setTimeout(() => {
+        const root = document.getElementById('root');
+        if (root && root.innerHTML.includes('loading-fallback')) {
+          console.warn('React app failed to load within 10 seconds');
+          root.innerHTML = `
+            <div class="loading-fallback">
+              <h2>⚠️ Ứng dụng tải chậm</h2>
+              <p>Đang cố gắng tải lại...</p>
+              <button onclick="window.location.reload()" style="padding: 10px 20px; margin-top: 1rem; background: white; color: #333; border: none; border-radius: 5px; cursor: pointer;">
+                🔄 Tải lại trang
+              </button>
+            </div>
+          `;
+        }
+      }, 10000);
+      
+      // Disable Service Worker temporarily for debugging
+      /*
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {
           navigator.serviceWorker.register('/sw.js')
@@ -29,6 +106,7 @@
             });
         });
       }
+      */
     </script>
   </body>
 </html>
