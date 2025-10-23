@@ -99,7 +99,7 @@ self.addEventListener('fetch', (event) => {
 async function handleAliasRequest(alias) {
   try {
     // Check if alias exists in database
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/links_2025_10_23_12_04?alias=eq.${alias}&is_active=eq.true&select=*`, {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/links_2025_10_23_12_04?alias=eq.${alias}&select=*`, {
       headers: {
         'apikey': SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
@@ -125,7 +125,7 @@ async function handleAliasRequest(alias) {
     }
 
     // Check click limit
-    if (link.max_clicks && link.current_clicks >= link.max_clicks) {
+    if (link.max_clicks && link.click_count >= link.max_clicks) {
       return createErrorResponse('Link đã đạt giới hạn số lần truy cập');
     }
 
@@ -134,26 +134,21 @@ async function handleAliasRequest(alias) {
       return createPasswordResponse(alias);
     }
 
-    // Record click
+    // Update click count
     try {
-      await fetch(`${SUPABASE_URL}/rest/v1/clicks_2025_10_23_12_04`, {
-        method: 'POST',
+      await fetch(`${SUPABASE_URL}/rest/v1/links_2025_10_23_12_04?id=eq.${link.id}`, {
+        method: 'PATCH',
         headers: {
           'apikey': SUPABASE_ANON_KEY,
           'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          link_id: link.id,
-          ip_address: '127.0.0.1',
-          user_agent: 'ServiceWorker',
-          device_type: 'unknown',
-          browser: 'unknown',
-          os: 'unknown'
+          click_count: (link.click_count || 0) + 1
         })
       });
     } catch (error) {
-      console.error('Error recording click:', error);
+      console.error('Error updating click count:', error);
     }
 
     // Handle redirect based on link type

@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QLink4u Debug - User Creation Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success { border-color: #4CAF50; background: #f8fff8; }
+        .error { border-color: #f44336; background: #fff8f8; }
+        .loading { border-color: #2196F3; background: #f8f8ff; }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #5a6fd8; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+        .log {
+            max-height: 300px;
+            overflow-y: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 QLink4u Debug - User Creation Test</h1>
+        <p>Trang này giúp debug lỗi "Database error saving new user"</p>
+
+        <div class="test-section">
+            <h3>🧪 Test 1: Debug Edge Function</h3>
+            <button onclick="runDebugTest()" id="debugBtn">Run Debug Test</button>
+            <div id="debugResult"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🔐 Test 2: Auth Signup Test</h3>
+            <input type="email" id="testEmail" placeholder="test@example.com" value="debug@qlink4u.com">
+            <input type="password" id="testPassword" placeholder="password123" value="password123">
+            <button onclick="testSignup()" id="signupBtn">Test Signup</button>
+            <div id="signupResult"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 Console Logs</h3>
+            <button onclick="clearLogs()">Clear Logs</button>
+            <pre id="consoleLogs" class="log"></pre>
+        </div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+        
+        // Initialize Supabase client
+        const supabaseUrl = 'https://ixqkqfkqvqkqfkqvqkqf.supabase.co' // Replace with actual URL
+        const supabaseAnonKey = 'your-anon-key' // Replace with actual key
+        
+        // Try to get from window if available
+        let supabase
+        try {
+            // This will work if main app is loaded
+            supabase = window.supabase || createClient(supabaseUrl, supabaseAnonKey)
+        } catch (e) {
+            console.log('Using fallback Supabase config')
+            supabase = createClient(supabaseUrl, supabaseAnonKey)
+        }
+
+        window.supabase = supabase
+
+        // Logging function
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString()
+            const logElement = document.getElementById('consoleLogs')
+            const logLine = `[${timestamp}] ${type.toUpperCase()}: ${message}\n`
+            logElement.textContent += logLine
+            logElement.scrollTop = logElement.scrollHeight
+            
+            if (type === 'error') {
+                console.error(message)
+            } else {
+                console.log(message)
+            }
+        }
+
+        window.log = log
+
+        // Test functions
+        window.runDebugTest = async function() {
+            const btn = document.getElementById('debugBtn')
+            const result = document.getElementById('debugResult')
+            
+            btn.disabled = true
+            btn.textContent = 'Running...'
+            result.innerHTML = '<div class="loading">🔄 Running debug tests...</div>'
+            
+            try {
+                log('Starting debug Edge Function test...')
+                
+                const response = await supabase.functions.invoke('debug_user_creation_2025_10_23_18_15', {
+                    body: {}
+                })
+                
+                log(`Debug response: ${JSON.stringify(response, null, 2)}`)
+                
+                if (response.error) {
+                    throw response.error
+                }
+                
+                result.innerHTML = `
+                    <div class="success">
+                        <h4>✅ Debug Test Results:</h4>
+                        <pre>${JSON.stringify(response.data, null, 2)}</pre>
+                    </div>
+                `
+                
+            } catch (error) {
+                log(`Debug test error: ${error.message}`, 'error')
+                result.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Debug Test Failed:</h4>
+                        <pre>${error.message}</pre>
+                    </div>
+                `
+            } finally {
+                btn.disabled = false
+                btn.textContent = 'Run Debug Test'
+            }
+        }
+
+        window.testSignup = async function() {
+            const btn = document.getElementById('signupBtn')
+            const result = document.getElementById('signupResult')
+            const email = document.getElementById('testEmail').value
+            const password = document.getElementById('testPassword').value
+            
+            if (!email || !password) {
+                alert('Please enter email and password')
+                return
+            }
+            
+            btn.disabled = true
+            btn.textContent = 'Testing...'
+            result.innerHTML = '<div class="loading">🔄 Testing signup...</div>'
+            
+            try {
+                log(`Testing signup with email: ${email}`)
+                
+                const { data, error } = await supabase.auth.signUp({
+                    email: email,
+                    password: password,
+                    options: {
+                        data: {
+                            full_name: 'Debug Test User'
+                        }
+                    }
+                })
+                
+                log(`Signup response: ${JSON.stringify({ data, error }, null, 2)}`)
+                
+                if (error) {
+                    throw error
+                }
+                
+                result.innerHTML = `
+                    <div class="success">
+                        <h4>✅ Signup Test Success:</h4>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                        <p><strong>Check your email for confirmation link!</strong></p>
+                    </div>
+                `
+                
+            } catch (error) {
+                log(`Signup test error: ${error.message}`, 'error')
+                result.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Signup Test Failed:</h4>
+                        <pre>${error.message}</pre>
+                    </div>
+                `
+            } finally {
+                btn.disabled = false
+                btn.textContent = 'Test Signup'
+            }
+        }
+
+        window.clearLogs = function() {
+            document.getElementById('consoleLogs').textContent = ''
+        }
+
+        // Auto-log page load
+        log('Debug page loaded successfully')
+        log('Supabase client initialized')
+    </script>
+</body>
+</html>

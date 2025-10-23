@@ -7,9 +7,8 @@ interface AuthContextType {
   user: User | null
   session: Session | null
   loading: boolean
-  signInWithOAuth: (provider: 'google' | 'github' | 'apple' | 'azure') => Promise<void>
-  signInWithEmail: (email: string, password: string) => Promise<void>
-  signUpWithEmail: (email: string, password: string, userData?: any) => Promise<void>
+  signInWithEmail: (email: string, password: string) => Promise<{ data: any; error: any }>
+  signUpWithEmail: (email: string, password: string, userData?: any) => Promise<{ data: any; error: any }>
   signOut: () => Promise<void>
 }
 
@@ -29,24 +28,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false)
     })
 
-    // Set up auth state listener
+    // Set up auth state listener - NO automatic profile creation
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state change:', event, session?.user?.id)
+        console.log('=== AUTH STATE CHANGE ===')
+        console.log('Event:', event)
+        console.log('Session:', session?.user?.id)
+        
         setSession(session)
         setUser(session?.user ?? null)
         setLoading(false)
 
+        // Only show success toast for actual sign in
         if (event === 'SIGNED_IN' && session?.user) {
-          // Create user profile in background - don't block UI
-          createUserProfile(session.user).catch(err => 
-            console.error('Background user profile creation failed:', err)
-          )
+          console.log('User signed in successfully:', session.user.id)
           
           toast({
             title: "Đăng nhập thành công",
             description: "Chào mừng bạn đến với QLink4u!",
           })
+          
+          // NO automatic profile creation - keeping it simple
+          console.log('No automatic profile creation - keeping it simple')
         }
       }
     )
@@ -54,77 +57,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe()
   }, [toast])
 
-  // Create user profile using Edge Function
-  const createUserProfile = async (user: User) => {
-    try {
-      console.log('Creating user profile for:', user.id)
-      
-      // Add timeout to prevent hanging
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('User profile creation timeout')), 5000)
-      )
-      
-      const createPromise = supabase.functions.invoke('ensure_user_profile_2025_10_23_15_12', {
-        body: {
-          action: 'ensure_user_profile',
-          userId: user.id,
-          email: user.email,
-          fullName: user.user_metadata?.full_name
-        }
-      })
-
-      const { data, error } = await Promise.race([createPromise, timeoutPromise]) as any
-
-      if (error) {
-        console.error('Error creating user profile via Edge Function:', error)
-      } else {
-        console.log('User profile created successfully:', data)
-      }
-    } catch (error) {
-      console.error('Error in createUserProfile:', error)
-      // Don't throw - let it fail silently in background
-    }
-  }
-
-  const signInWithOAuth = async (provider: 'google' | 'github' | 'apple' | 'azure') => {
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo: `${window.location.origin}/dashboard`
-        }
-      })
-
-      if (error) throw error
-    } catch (error: any) {
-      toast({
-        title: "Lỗi đăng nhập",
-        description: error.message,
-        variant: "destructive",
-      })
-    }
-  }
-
   const signInWithEmail = async (email: string, password: string) => {
     try {
-      console.log('Attempting sign in with email:', email)
+      console.log('=== SIGNIN ATTEMPT ===')
+      console.log('Email:', email)
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
       
-      console.log('Sign in result:', { data, error })
+      console.log('=== SIGNIN RESULT ===')
+      console.log('Data:', data)
+      console.log('Error:', error)
       
-      if (error) throw error
+      if (error) {
+        console.error('Signin error details:', error)
+        throw error
+      }
+
+      console.log('✅ Signin successful!')
       
-      console.log('Sign in successful!')
-      // Don't do anything else - let the auth state listener handle it
-      
+      return { data, error: null }
     } catch (error: any) {
-      console.error('Sign in error:', error)
+      console.error('=== SIGNIN ERROR ===', error)
       toast({
         title: "Lỗi đăng nhập",
-        description: error.message,
+        description: error.message || "Không thể đăng nhập. Vui lòng thử lại.",
         variant: "destructive",
       })
       throw error
@@ -133,6 +92,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUpWithEmail = async (email: string, password: string, userData?: any) => {
     try {
+      console.log('=== SIGNUP ATTEMPT ===')
+      console.log('Email:', email)
+      console.log('UserData:', userData)
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -141,41 +104,60 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           data: userData
         }
       })
-      if (error) throw error
-
-      // Create user profile immediately if user is created
-      if (data.user && !data.user.email_confirmed_at) {
-        await createUserProfile(data.user)
+      
+      console.log('=== SIGNUP RESULT ===')
+      console.log('Data:', data)
+      console.log('Error:', error)
+      
+      if (error) {
+        console.error('Signup error details:', error)
+        throw error
       }
+
+      console.log('✅ Signup successful! Check email for confirmation.')
 
       toast({
         title: "Đăng ký thành công",
-        description: "Vui lòng kiểm tra email để xác nhận tài khoản",
+        description: "Vui lòng kiểm tra email để xác nhận tài khoản. Không cần tạo profile ngay.",
       })
+      
+      return { data, error: null }
     } catch (error: any) {
+      console.error('=== SIGNUP ERROR ===', error)
       toast({
         title: "Lỗi đăng ký",
-        description: error.message,
+        description: error.message || "Không thể đăng ký. Vui lòng thử lại.",
         variant: "destructive",
       })
       throw error
     }
   }
+
   const signOut = async () => {
     try {
+      console.log('=== SIGNOUT ATTEMPT ===')
+      
       const { error } = await supabase.auth.signOut()
-      if (error) throw error
+      
+      if (error) {
+        console.error('Signout error:', error)
+        throw error
+      }
 
+      console.log('✅ Signout successful!')
+      
       toast({
         title: "Đăng xuất thành công",
         description: "Hẹn gặp lại bạn!",
       })
     } catch (error: any) {
+      console.error('=== SIGNOUT ERROR ===', error)
       toast({
         title: "Lỗi đăng xuất",
-        description: error.message,
+        description: error.message || "Không thể đăng xuất. Vui lòng thử lại.",
         variant: "destructive",
       })
+      throw error
     }
   }
 
@@ -183,17 +165,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user,
     session,
     loading,
-    signInWithOAuth,
     signInWithEmail,
     signUpWithEmail,
     signOut,
   }
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  )
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 export function useAuth() {

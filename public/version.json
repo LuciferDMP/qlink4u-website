@@ -1,16 +1,27 @@
 {
-  "version": "V28.2025.10.23.17.30",
-  "buildDate": "2025-10-23T17:30:00Z",
+  "version": "V28.2025.10.23.20.00",
+  "buildDate": "2025-10-23T20:00:00Z",
   "environment": "production",
+  "database": "Supabase",
   "features": [
-    "Fixed login hanging issue - STABLE",
-    "Improved error handling and timeout protection",
-    "Background user profile creation",
-    "Service Worker for dynamic routing",
-    "Logo and UI improvements",
-    "Version tracking system"
+    "Supabase Database Integration - RESTORED",
+    "User Authentication System",
+    "URL Shortening with Custom Alias",
+    "Advanced Link Options",
+    "Password Protection",
+    "Link Expiration",
+    "Click Limits",
+    "Link Masking",
+    "QR Code Generation",
+    "User Dashboard",
+    "Link Analytics",
+    "Copy to Clipboard",
+    "Mobile Responsive"
   ],
   "changelog": {
+    "V28-RESTORED": "SUPABASE - Restored original Supabase database integration",
+    "V30": "GOOGLE SHEETS - Complete database migration to Google Sheets API",
+    "V29": "LocalDemo - Created localStorage fallback version",
     "V28": "STABLE - Fixed login timeout, added version tracking",
     "V27": "Added Service Worker and dynamic routing", 
     "V26": "Implemented ProtectedRoute and auth system"

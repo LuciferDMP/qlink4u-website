@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QLink4u - Redirecting...</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            text-align: center;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        .logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .error {
+            background: rgba(244, 67, 54, 0.1);
+            border: 1px solid rgba(244, 67, 54, 0.3);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        .success {
+            background: rgba(76, 175, 80, 0.1);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        a {
+            color: white;
+            text-decoration: underline;
+        }
+        .countdown {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">Q4U</div>
+        <h1>QLink4u</h1>
+        <div class="spinner"></div>
+        <p id="status">Đang tìm kiếm link...</p>
+        <div id="result"></div>
+        <div id="countdown" class="countdown" style="display: none;"></div>
+    </div>
+
+    <script>
+        // Get alias from URL path
+        const path = window.location.pathname
+        const alias = path.substring(1) // Remove leading slash
+        
+        console.log('Redirect handler loaded for alias:', alias)
+        
+        // Google Sheets configuration
+        let config = null
+        
+        // Load configuration
+        function loadConfig() {
+            const saved = localStorage.getItem('qlink4u_sheets_config')
+            if (saved) {
+                config = JSON.parse(saved)
+                return true
+            }
+            return false
+        }
+        
+        // Search for link in Google Sheets
+        async function findLink(alias) {
+            if (!config) {
+                throw new Error('Google Sheets not configured')
+            }
+            
+            try {
+                const response = await fetch(
+                    `https://sheets.googleapis.com/v4/spreadsheets/${config.spreadsheetId}/values/Links!A:L?key=${config.apiKey}`
+                )
+                
+                if (!response.ok) {
+                    throw new Error(`Google Sheets API error: ${response.status}`)
+                }
+                
+                const data = await response.json()
+                const rows = data.values || []
+                
+                // Skip header row and find matching alias
+                for (let i = 1; i < rows.length; i++) {
+                    const row = rows[i]
+                    if (row[1] === alias) { // Column B is alias
+                        return {
+                            id: row[0],
+                            alias: row[1],
+                            destination_url: row[2],
+                            title: row[3],
+                            description: row[4],
+                            link_type: row[5] || 'redirect',
+                            password_hash: row[6],
+                            expires_at: row[7],
+                            max_clicks: row[8] ? parseInt(row[8]) : null,
+                            click_count: parseInt(row[9]) || 0,
+                            created_at: row[10],
+                            user_email: row[11]
+                        }
+                    }
+                }
+                
+                return null // Link not found
+                
+            } catch (error) {
+                console.error('Error finding link:', error)
+                throw error
+            }
+        }
+        
+        // Update click count in Google Sheets
+        async function updateClickCount(alias, currentCount) {
+            // This would require more complex Google Sheets API calls
+            // For now, we'll just log it
+            console.log(`Would update click count for ${alias}: ${currentCount + 1}`)
+        }
+        
+        // Check if link is expired
+        function isExpired(expiresAt) {
+            if (!expiresAt) return false
+            return new Date(expiresAt) < new Date()
+        }
+        
+        // Check if max clicks reached
+        function isMaxClicksReached(clickCount, maxClicks) {
+            if (!maxClicks) return false
+            return clickCount >= maxClicks
+        }
+        
+        // Redirect with countdown
+        function redirectWithCountdown(url, seconds = 3) {
+            const countdownEl = document.getElementById('countdown')
+            const statusEl = document.getElementById('status')
+            
+            countdownEl.style.display = 'block'
+            statusEl.textContent = `Đang chuyển hướng đến: ${url}`
+            
+            let remaining = seconds
+            countdownEl.textContent = remaining
+            
+            const interval = setInterval(() => {
+                remaining--
+                countdownEl.textContent = remaining
+                
+                if (remaining <= 0) {
+                    clearInterval(interval)
+                    window.location.href = url
+                }
+            }, 1000)
+        }
+        
+        // Main redirect logic
+        async function handleRedirect() {
+            const statusEl = document.getElementById('status')
+            const resultEl = document.getElementById('result')
+            
+            if (!alias) {
+                statusEl.textContent = 'Không tìm thấy alias'
+                resultEl.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Lỗi</h3>
+                        <p>URL không hợp lệ. Vui lòng kiểm tra lại link.</p>
+                        <p><a href="/">← Về trang chủ QLink4u</a></p>
+                    </div>
+                `
+                return
+            }
+            
+            // Check if Google Sheets is configured
+            if (!loadConfig()) {
+                statusEl.textContent = 'Chưa cấu hình Google Sheets'
+                resultEl.innerHTML = `
+                    <div class="error">
+                        <h3>⚙️ Chưa cấu hình</h3>
+                        <p>Google Sheets chưa được cấu hình.</p>
+                        <p><a href="/">← Cấu hình tại trang chủ</a></p>
+                    </div>
+                `
+                return
+            }
+            
+            try {
+                statusEl.textContent = `Đang tìm kiếm: ${alias}`
+                
+                const link = await findLink(alias)
+                
+                if (!link) {
+                    statusEl.textContent = 'Không tìm thấy link'
+                    resultEl.innerHTML = `
+                        <div class="error">
+                            <h3>❌ Link không tồn tại</h3>
+                            <p>Link <strong>${alias}</strong> không tồn tại hoặc đã bị xóa.</p>
+                            <p><a href="/">← Tạo link mới tại QLink4u</a></p>
+                        </div>
+                    `
+                    return
+                }
+                
+                // Check if expired
+                if (isExpired(link.expires_at)) {
+                    statusEl.textContent = 'Link đã hết hạn'
+                    resultEl.innerHTML = `
+                        <div class="error">
+                            <h3>⏰ Link đã hết hạn</h3>
+                            <p>Link này đã hết hạn vào ${new Date(link.expires_at).toLocaleString('vi-VN')}</p>
+                            <p><a href="/">← Tạo link mới tại QLink4u</a></p>
+                        </div>
+                    `
+                    return
+                }
+                
+                // Check if max clicks reached
+                if (isMaxClicksReached(link.click_count, link.max_clicks)) {
+                    statusEl.textContent = 'Link đã đạt giới hạn click'
+                    resultEl.innerHTML = `
+                        <div class="error">
+                            <h3>🚫 Đã đạt giới hạn</h3>
+                            <p>Link này đã đạt giới hạn ${link.max_clicks} lượt click.</p>
+                            <p><a href="/">← Tạo link mới tại QLink4u</a></p>
+                        </div>
+                    `
+                    return
+                }
+                
+                // Check if password protected
+                if (link.password_hash) {
+                    const password = prompt('Link này được bảo vệ bằng mật khẩu:')
+                    if (password !== link.password_hash) {
+                        statusEl.textContent = 'Mật khẩu không đúng'
+                        resultEl.innerHTML = `
+                            <div class="error">
+                                <h3>🔒 Mật khẩu không đúng</h3>
+                                <p>Vui lòng nhập đúng mật khẩu để truy cập link.</p>
+                                <p><a href="javascript:location.reload()">← Thử lại</a></p>
+                            </div>
+                        `
+                        return
+                    }
+                }
+                
+                // Update click count (would need more complex implementation)
+                await updateClickCount(link.alias, link.click_count)
+                
+                // Success - redirect
+                resultEl.innerHTML = `
+                    <div class="success">
+                        <h3>✅ Tìm thấy link!</h3>
+                        <p><strong>Tiêu đề:</strong> ${link.title || 'Không có tiêu đề'}</p>
+                        <p><strong>Mô tả:</strong> ${link.description || 'Không có mô tả'}</p>
+                        <p><strong>Đích đến:</strong> ${link.destination_url}</p>
+                        <p><strong>Loại:</strong> ${link.link_type === 'masking' ? 'Link masking' : 'Redirect'}</p>
+                    </div>
+                `
+                
+                // Redirect based on link type
+                if (link.link_type === 'masking') {
+                    // For masking, we would need to load the content in an iframe
+                    // For now, just redirect normally
+                    redirectWithCountdown(link.destination_url, 3)
+                } else {
+                    // Normal redirect
+                    redirectWithCountdown(link.destination_url, 3)
+                }
+                
+            } catch (error) {
+                console.error('Redirect error:', error)
+                statusEl.textContent = 'Lỗi khi tìm kiếm link'
+                resultEl.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Lỗi hệ thống</h3>
+                        <p>Không thể tìm kiếm link: ${error.message}</p>
+                        <p><a href="/">← Về trang chủ QLink4u</a></p>
+                    </div>
+                `
+            }
+        }
+        
+        // Start redirect process
+        handleRedirect()
+    </script>
+</body>
+</html>
