@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/images/QLink4U.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QLink4u.com - Dịch vụ rút gọn link chuyên nghiệp</title>
+    <meta name="description" content="QLink4u.com - Dịch vụ rút gọn link chuyên nghiệp với tính năng che link, thống kê chi tiết, bảo mật nâng cao và nhiều tính năng khác." />
+    <meta name="author" content="QLink4u" />
+
+    <meta property="og:title" content="QLink4u.com - Dịch vụ rút gọn link chuyên nghiệp" />
+    <meta property="og:description" content="Tạo link rút gọn với tính năng che link, thống kê chi tiết, bảo mật nâng cao. Hỗ trợ cả cá nhân và doanh nghiệp." />
+    <meta property="og:type" content="website" />
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Register Service Worker for dynamic routing
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/sw.js')
+            .then(function(registration) {
+              console.log('ServiceWorker registration successful');
+            })
+            .catch(function(err) {
+              console.log('ServiceWorker registration failed: ', err);
+            });
+        });
+      }
+    </script>
+  </body>
+</html>
