@@ -1,0 +1,18 @@
+{
+  "version": "V28.2025.10.23.17.30",
+  "buildDate": "2025-10-23T17:30:00Z",
+  "environment": "production",
+  "features": [
+    "Fixed login hanging issue - STABLE",
+    "Improved error handling and timeout protection",
+    "Background user profile creation",
+    "Service Worker for dynamic routing",
+    "Logo and UI improvements",
+    "Version tracking system"
+  ],
+  "changelog": {
+    "V28": "STABLE - Fixed login timeout, added version tracking",
+    "V27": "Added Service Worker and dynamic routing", 
+    "V26": "Implemented ProtectedRoute and auth system"
+  }
+}

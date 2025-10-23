@@ -85,14 +85,14 @@ self.addEventListener('fetch', (event) => {
   // If it looks like an alias (single segment, no special chars), handle it
   if (alias && 
       alias.length > 0 && 
+      alias.length <= 50 && // Reasonable alias length limit
       !alias.includes('/') && 
       !alias.includes('.') &&
-      alias.length <= 50 && // Reasonable alias length limit
       /^[a-zA-Z0-9_-]+$/.test(alias)) { // Only alphanumeric, underscore, dash
     console.log('Service Worker: Handling alias', alias);
     event.respondWith(handleAliasRequest(alias));
   } else {
-    console.log('Service Worker: Not handling request', pathname);
+    console.log('Service Worker: Not handling request', pathname, 'alias:', alias);
   }
 });
 

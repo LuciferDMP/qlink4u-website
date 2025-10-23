@@ -32,13 +32,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state change:', event, session?.user?.id)
         setSession(session)
         setUser(session?.user ?? null)
         setLoading(false)
 
         if (event === 'SIGNED_IN' && session?.user) {
-          // Create user profile if not exists
-          await createUserProfile(session.user)
+          // Create user profile in background - don't block UI
+          createUserProfile(session.user).catch(err => 
+            console.error('Background user profile creation failed:', err)
+          )
           
           toast({
             title: "Đăng nhập thành công",
@@ -54,7 +57,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Create user profile using Edge Function
   const createUserProfile = async (user: User) => {
     try {
-      const { data, error } = await supabase.functions.invoke('ensure_user_profile_2025_10_23_15_12', {
+      console.log('Creating user profile for:', user.id)
+      
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('User profile creation timeout')), 5000)
+      )
+      
+      const createPromise = supabase.functions.invoke('ensure_user_profile_2025_10_23_15_12', {
         body: {
           action: 'ensure_user_profile',
           userId: user.id,
@@ -63,11 +73,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       })
 
+      const { data, error } = await Promise.race([createPromise, timeoutPromise]) as any
+
       if (error) {
         console.error('Error creating user profile via Edge Function:', error)
+      } else {
+        console.log('User profile created successfully:', data)
       }
     } catch (error) {
       console.error('Error in createUserProfile:', error)
+      // Don't throw - let it fail silently in background
     }
   }
 
@@ -92,12 +107,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithEmail = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log('Attempting sign in with email:', email)
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
+      
+      console.log('Sign in result:', { data, error })
+      
       if (error) throw error
+      
+      console.log('Sign in successful!')
+      // Don't do anything else - let the auth state listener handle it
+      
     } catch (error: any) {
+      console.error('Sign in error:', error)
       toast({
         title: "Lỗi đăng nhập",
         description: error.message,

@@ -93,8 +93,7 @@
         }
       }, 10000);
       
-      // Disable Service Worker temporarily for debugging
-      /*
+      // Register Service Worker for dynamic routing
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {
           navigator.serviceWorker.register('/sw.js')
@@ -106,7 +105,6 @@
             });
         });
       }
-      */
     </script>
   </body>
 </html>
