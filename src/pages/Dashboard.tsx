@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -11,6 +12,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/integrations/supabase/client'
+import QRCodeWithLogo from '@/components/QRCodeWithLogo'
+import LanguageSwitcher from '@/components/LanguageSwitcher'
+import Loading from '@/components/Loading'
 import { 
   Link as LinkIcon, 
   BarChart3, 
@@ -34,11 +38,11 @@ interface LinkData {
   link_type: 'redirect' | 'masking'
   title?: string
   description?: string
-  current_clicks: number
+  click_count: number
   expires_at?: string
   max_clicks?: number
   created_at: string
-  is_active: boolean
+  password_hash?: string
 }
 
 interface UserData {
@@ -58,6 +62,7 @@ export default function Dashboard() {
   
   const { user, signOut } = useAuth()
   const { toast } = useToast()
+  const { t } = useTranslation()
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -115,8 +120,66 @@ export default function Dashboard() {
   }
 
   const generateQRCode = (alias: string) => {
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`https://qlink4u.com/${alias}`)}`
-    window.open(qrUrl, '_blank')
+    const linkUrl = `https://qlink4u.com/${alias}`
+    // Open QR code in new window with logo
+    const qrWindow = window.open('', '_blank', 'width=300,height=350')
+    if (qrWindow) {
+      qrWindow.document.write(`
+        <html>
+          <head>
+            <title>QR Code - ${alias}</title>
+            <style>
+              body { 
+                font-family: Arial, sans-serif; 
+                text-align: center; 
+                padding: 20px; 
+                background: #f5f5f5;
+              }
+              .qr-container {
+                background: white;
+                padding: 20px;
+                border-radius: 10px;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                display: inline-block;
+              }
+              .qr-code {
+                position: relative;
+                display: inline-block;
+              }
+              .logo-overlay {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: white;
+                padding: 4px;
+                border-radius: 6px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+              }
+              .logo-overlay img {
+                width: 32px;
+                height: 32px;
+                object-fit: contain;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="qr-container">
+              <h3>QR Code</h3>
+              <div class="qr-code">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(linkUrl)}&format=png&margin=10" alt="QR Code" />
+                <div class="logo-overlay">
+                  <img src="/images/QLink4U.png" alt="QLink4u Logo" />
+                </div>
+              </div>
+              <p><strong>qlink4u.com/${alias}</strong></p>
+              <p style="font-size: 12px; color: #666;">Scan to visit link</p>
+            </div>
+          </body>
+        </html>
+      `)
+      qrWindow.document.close()
+    }
   }
 
   const shareLink = async (alias: string, title?: string) => {
@@ -231,14 +294,7 @@ export default function Dashboard() {
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Đang tải...</p>
-        </div>
-      </div>
-    )
+    return <Loading message={t('common.loading')} />
   }
 
   return (
@@ -248,34 +304,36 @@ export default function Dashboard() {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Link to="/" className="flex items-center space-x-2">
-              <LinkIcon className="h-8 w-8 text-primary" />
-              <span className="text-2xl font-bold text-primary">QLink4u.com</span>
+              <img src="/images/QLink4U.png" alt="QLink4u Logo" className="h-8 w-auto" />
+              <span className="text-2xl font-bold text-primary">{t('header.brand')}</span>
             </Link>
           </div>
           
           <div className="flex items-center space-x-4">
+            <LanguageSwitcher />
+            
             <Button variant="outline" asChild>
               <Link to="/">
                 <Plus className="w-4 h-4 mr-2" />
-                Tạo link mới
+                {t('header.createNew')}
               </Link>
             </Button>
             
             <div className="flex items-center space-x-2">
               <Button variant="ghost" size="sm" asChild>
-                <Link to="/profile">Hồ sơ</Link>
+                <Link to="/profile">{t('header.profile')}</Link>
               </Button>
               <Button variant="ghost" size="sm" asChild>
-                <Link to="/settings">Cài đặt</Link>
+                <Link to="/settings">{t('header.settings')}</Link>
               </Button>
               <img 
-                src={user?.user_metadata?.avatar_url} 
+                src={user?.user_metadata?.avatar_url || '/images/QLink4U.png'} 
                 alt="Avatar" 
                 className="w-8 h-8 rounded-full"
               />
-              <span className="text-sm font-medium">{user?.user_metadata?.full_name}</span>
+              <span className="text-sm font-medium">{user?.user_metadata?.full_name || user?.email}</span>
               <Button variant="ghost" size="sm" onClick={signOut}>
-                Đăng xuất
+                {t('header.logout')}
               </Button>
             </div>
           </div>
@@ -328,7 +386,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <p className="text-3xl font-bold text-primary">
-                {links.reduce((total, link) => total + link.current_clicks, 0)}
+                {links.reduce((total, link) => total + link.click_count, 0)}
               </p>
               <p className="text-sm text-muted-foreground">
                 Từ {links.length} link
@@ -345,10 +403,10 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <p className="text-3xl font-bold text-green-600">
-                {links.filter(link => link.is_active).length}
+                {links.filter(link => !link.expires_at || new Date(link.expires_at) > new Date()).length}
               </p>
               <p className="text-sm text-muted-foreground">
-                Link đang hoạt động
+                Link chưa hết hạn
               </p>
             </CardContent>
           </Card>
@@ -422,7 +480,7 @@ export default function Dashboard() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center space-x-1">
-                          <span className="font-medium">{link.current_clicks}</span>
+                          <span className="font-medium">{link.click_count}</span>
                           {link.max_clicks && (
                             <span className="text-muted-foreground">/ {link.max_clicks}</span>
                           )}
@@ -432,12 +490,25 @@ export default function Dashboard() {
                         {new Date(link.created_at).toLocaleDateString('vi-VN')}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={link.is_active ? 'default' : 'destructive'}>
-                          {link.is_active ? 'Hoạt động' : 'Tạm dừng'}
-                        </Badge>
-                        {link.expires_at && new Date(link.expires_at) < new Date() && (
-                          <Badge variant="destructive" className="ml-1">Hết hạn</Badge>
-                        )}
+                        {(() => {
+                          const isExpired = link.expires_at && new Date(link.expires_at) < new Date()
+                          const isMaxClicks = link.max_clicks && link.click_count >= link.max_clicks
+                          const isActive = !isExpired && !isMaxClicks
+                          
+                          return (
+                            <div className="flex flex-col space-y-1">
+                              <Badge variant={isActive ? 'default' : 'destructive'}>
+                                {isActive ? 'Hoạt động' : 'Tạm dừng'}
+                              </Badge>
+                              {isExpired && (
+                                <Badge variant="destructive" className="text-xs">Hết hạn</Badge>
+                              )}
+                              {isMaxClicks && (
+                                <Badge variant="destructive" className="text-xs">Đạt giới hạn</Badge>
+                              )}
+                            </div>
+                          )
+                        })()}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center space-x-1">

@@ -1,10 +1,11 @@
 {
-  "version": "V28.2025.10.23.20.00",
-  "buildDate": "2025-10-23T20:00:00Z",
+  "version": "V49.2025.10.23.20.45",
+  "buildDate": "2025-10-23T20:45:00Z",
   "environment": "production",
   "database": "Supabase",
+  "status": "CLEANED",
   "features": [
-    "Supabase Database Integration - RESTORED",
+    "Supabase Database Integration - STABLE",
     "User Authentication System",
     "URL Shortening with Custom Alias",
     "Advanced Link Options",
@@ -16,14 +17,32 @@
     "User Dashboard",
     "Link Analytics",
     "Copy to Clipboard",
-    "Mobile Responsive"
+    "Mobile Responsive",
+    "RLS Policies for Security",
+    "Service Worker for Redirects"
   ],
   "changelog": {
-    "V28-RESTORED": "SUPABASE - Restored original Supabase database integration",
-    "V30": "GOOGLE SHEETS - Complete database migration to Google Sheets API",
-    "V29": "LocalDemo - Created localStorage fallback version",
-    "V28": "STABLE - Fixed login timeout, added version tracking",
-    "V27": "Added Service Worker and dynamic routing", 
-    "V26": "Implemented ProtectedRoute and auth system"
+    "V49-CLEANED": "PROJECT CLEANUP - Removed all unused files, components, and legacy code",
+    "V48": "FIXED RLS - Added public policies for Service Worker access to user links",
+    "V47": "FIXED SCHEMA - Updated Dashboard to match database field names",
+    "V28-RESTORED": "SUPABASE - Restored original Supabase database integration"
+  },
+  "cleanup": {
+    "removed_files": [
+      "Google Sheets integration files",
+      "Debug and test HTML files", 
+      "Unused React components",
+      "Legacy migration files",
+      "Deployment config files",
+      "Unused UI components",
+      "Development artifacts"
+    ],
+    "kept_essential": [
+      "Core React components",
+      "Supabase integration",
+      "Active database migrations",
+      "Service Worker",
+      "Essential UI components"
+    ]
   }
 }
