@@ -1,7 +1,0 @@
-# Trong thư mục qlink4u local
-git init
-git add .
-git commit -m "Initial QLink4u.com website"
-git branch -M main
-git remote add origin https://github.com/[username]/qlink4u-website.git
-git push -u origin main
